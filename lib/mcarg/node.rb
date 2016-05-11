@@ -1,30 +1,31 @@
 module MCArg
-  attr_reader :children, :type, :parent, :label, :optimal, :value
-  cattr_accessor :decision_method, :chance_method
-
-  def max_dec(children)
-    children.max_by { |a| a.value }
-  end
-
   class Node
-    def initialize(label, parent, value=nil)
-      @parent   = parent
-      @type     = (@parent.type == :decision ? :chance : :decision)
+    attr_reader :children, :function, :value, :optimal, :label
+    attr_accessor :parent
+
+    def initialize(function, label=nil)
+      @function = function
       @label    = label
-      @children = {}
+      @children = Hash.new(nil)
+      @value    = nil
       @optimal  = nil
-      @value    = value
+      @parent   = nil
     end
 
-    def optimize
-      unless @children.empty
-        @children.each {|c| c.optimize}
-        @optimal, @value = case @type
-        when :decision
-          @@decision_method.(children)
-        when :chance
-          @@chance_method.(children)
-        end
+    def add_child(node)
+      child = @children[node.label]
+      if child.nil?
+        node.parent = self
+        @children[node.label] = node
+      end
+      @children[node.label]
+    end
+
+    def optimize(discount = 0.9)
+      if value.is_nil?
+        @children.each_value { |c| c.optimize(discount) }
+        optimal = MCArg.method(@function).(children)
+        value   = discount * optimal.value
       end
     end
   end

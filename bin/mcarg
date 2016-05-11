@@ -1,3 +1,30 @@
-#! env ruby
+#!/usr/bin/env ruby
 
+require 'commander'
 require "mcarg"
+
+class MyApplication
+  include Commander::Methods
+
+  def run
+    program :name, 'mcarg'
+    program :version, '0.0.1'
+    program :description, 'Optimization of persuasion dialogues using decision trees.'
+
+    command :draw_tree do |c|
+      c.syntax = 'mcarg draw_tree [options]'
+      c.summary = 'Draw the decision tree using Graphviz'
+      c.description = ''
+      c.example 'description', 'command example'
+      c.action do |args|
+        graph = MCArg::Graph.new(args, :no_duplicate)
+        tree  = graph.build_tree(:foo, :bar, :eval)
+        tree.draw_tree
+      end
+    end
+
+    run!
+  end
+end
+
+MyApplication.new.run if $0 == __FILE__

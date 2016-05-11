@@ -1,27 +1,39 @@
 module MCArg
-  attr_reader :nodes, :args, :exec_filters
-
-  def no_duplicate(current, args)
+  def self.no_duplicate(current, args)
     args - current
   end
 
   class Graph
-    def initialize(exec_filters)
+    attr_reader :nodes, :args, :exec_filters
+
+    def initialize(args, *exec_filters)
+      @args = args
       @exec_filters = exec_filters
     end
 
-    def build_tree
-      executions = build_execution([], [])
+    def build_tree(dec_fct, chn_fct, eval_fct)
+      executions = build_executions([], [])
+      root = Node.new(dec_fct)
+      tree = Tree.new(root)
+
+      executions.each do |ex|
+        current = root
+        ex[0...-1].each_with_index do |arg, it|
+          current = current.add_child Node.new((it.odd? ? chn_fct : dec_fct), arg)
+        end
+        current.add_child LeafNode.new(MCArg.method(eval_fct).(ex), ex[-1])
+      end
+      tree
     end
 
-    def build_execution(current, list)
+    def build_executions(current, list)
       args = Array.new(@args)
       @exec_filters.each do |filt|
-        args = filt.(current, args)
+        args = MCArg.method(filt).(current, args)
       end
       return list + [current] if args.empty?
       args.each do |arg|
-        list = build_execution(current + arg, list)
+        list = build_executions(current + [arg], list)
       end
       list
     end
