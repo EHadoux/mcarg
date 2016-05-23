@@ -5,7 +5,7 @@ require 'mcarg/version'
 
 Gem::Specification.new do |spec|
   spec.name          = "mcarg"
-  spec.version       = Mcarg::VERSION
+  spec.version       = MCArg::VERSION
   spec.authors       = ["Emmanuel Hadoux"]
   spec.email         = ["emmanuel.hadoux@gmail.com"]
 
@@ -28,9 +28,12 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_dependency "commander"
+  spec.add_dependency "ruby-graphviz"
 
   spec.add_development_dependency "bundler", "~> 1.11"
   spec.add_development_dependency "rake", "~> 10.0"
   spec.add_development_dependency "rspec", "~> 3.0"
-  spec.add_development_dependency "ruby-graphviz"
+  spec.add_development_dependency "pry-byebug"
+  spec.add_development_dependency "iruby"
+  spec.add_development_dependency "rbczmq"
 end
