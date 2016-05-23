@@ -1,24 +1,35 @@
 #!/usr/bin/env ruby
 
-require 'commander'
+require "commander"
 require "mcarg"
 
 class MyApplication
   include Commander::Methods
 
   def run
-    program :name, 'mcarg'
-    program :version, '0.0.1'
-    program :description, 'Optimization of persuasion dialogues using decision trees.'
+    program :name, "mcarg"
+    program :version, MCArg::VERSION
+    program :description, "Optimization of persuasion dialogues using decision trees."
 
     command :draw_tree do |c|
-      c.syntax = 'mcarg draw_tree [options]'
-      c.summary = 'Draw the decision tree using Graphviz'
-      c.description = ''
-      c.example 'description', 'command example'
+      c.syntax = "mcarg draw_tree filename"
+      c.summary = "Draw the decision tree using Graphviz"
+      c.description = "Draw the decision tree of each possible execution using Graphviz."
       c.action do |args|
-        graph = MCArg::Graph.new(args, :no_duplicate)
-        tree  = graph.build_tree(:foo, :bar, :eval)
+        graph = MCArg::Graph.build_from_apx(args.shift)
+        tree  = graph.build_tree(dec_fct: :max_dec, chn_fct: :max_chance, filters: [:no_duplicate], agg_fct: :std_sum, eval_fct: :random)
+        tree.draw_tree
+      end
+    end
+
+    command :policy do |c|
+      c.syntax = "mcarg policy input_file"
+      c.summary = "Compute the optimal policy of the underlying decision tree"
+      c.description = "Compute the optimal policy of the underlying decision tree."
+      c.action do |args|
+        graph = MCArg::Graph.build_from_apx(args.shift)
+        tree  = graph.build_tree(dec_fct: :max_dec, chn_fct: :max_chance, filters: [:no_duplicate], agg_fct: :std_sum, eval_fct: :random)
+        tree.optimize
         tree.draw_tree
       end
     end
