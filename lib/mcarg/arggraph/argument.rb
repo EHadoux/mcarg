@@ -1,11 +1,10 @@
 module MCArg
   class Argument
-    attr_reader :attackers, :attacked, :label, :index
+    attr_reader :attackers, :attacked, :label
     attr_accessor :belief, :initial_belief
 
-    def initialize(label, index)
+    def initialize(label)
       @label     = label
-      @index     = index
       @belief    = 0
       @initial_belief = 0
       @attackers = {}

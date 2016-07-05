@@ -3,10 +3,11 @@ module MCArg
   require_relative "mcarg/functions/eval_functions"
   require_relative "mcarg/functions/update_functions"
   require_relative "mcarg/functions/filter_functions"
-    
-  autoload :Tree, "mcarg/dec_tree/tree"
-  autoload :Node, "mcarg/dec_tree/node"
-  autoload :LeafNode, "mcarg/dec_tree/leaf_node"
-  autoload :Graph, "mcarg/arg_graph/graph"
-  autoload :Argument, "mcarg/arg_graph/argument"
+
+  autoload :Tree, "mcarg/dectree/tree"
+  autoload :Node, "mcarg/dectree/node"
+  autoload :LeafNode, "mcarg/dectree/leaf_node"
+  autoload :Graph, "mcarg/arggraph/graph"
+  autoload :Argument, "mcarg/arggraph/argument"
+  autoload :APXParser, "mcarg/arggraph/apxparser"
 end

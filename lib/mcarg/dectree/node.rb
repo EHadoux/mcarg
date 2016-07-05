@@ -25,7 +25,7 @@ module MCArg
     def optimize(discount = 0.9)
       if @value.nil?
         @children.each_value { |c| c.optimize(discount) }
-        @optimal = MCArg.method(@function).(children.values)
+        @optimal = MCArg.method(@function).(children)
         @value   = discount * optimal.value
       end
     end

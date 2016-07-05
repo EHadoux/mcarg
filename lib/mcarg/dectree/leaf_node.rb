@@ -1,6 +1,6 @@
 module MCArg
   class LeafNode < Node
-    attr_reader :value
+    attr_accessor :value
 
     def initialize(value, label)
       super(:leaf, label)

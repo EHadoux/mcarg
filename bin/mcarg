@@ -3,7 +3,7 @@
 require "commander"
 require "mcarg"
 
-class MyApplication
+class MCArgBin
   include Commander::Methods
 
   def run
@@ -11,7 +11,7 @@ class MyApplication
     program :version, MCArg::VERSION
     program :description, "Optimization of persuasion dialogues using decision trees."
 
-    command :draw_tree do |c|
+    command :drawtree do |c|
       c.syntax = "mcarg draw_tree filename"
       c.summary = "Draw the decision tree using Graphviz"
       c.description = "Draw the decision tree of each possible execution using Graphviz."
@@ -38,4 +38,4 @@ class MyApplication
   end
 end
 
-MyApplication.new.run if $0 == __FILE__
+MCArgBin.new.run if $0 == __FILE__

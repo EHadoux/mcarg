@@ -2,9 +2,6 @@ module MCArg
   class Graph
     attr_reader :args, :goal
 
-    LABEL = "[[:alnum:]]+"
-    FLOAT = "1(\.0)?|0\.[0-9]+"
-
     def initialize(args, goal)
       @args         = args
       @goal         = goal.map { |g| @args[g] }
@@ -37,27 +34,8 @@ module MCArg
       tree
     end
 
-    def self.build_from_apx(file)
-      args = {}
-      goal = []
-      index = 0
-      IO.foreach(file) do |line|
-        case line
-        when /arg\((#{LABEL})\)\./
-          args[$1] = Argument.new($1, index)
-          index += 1
-        when /att\((#{LABEL}), (#{LABEL})\)\./
-          args[$1].add_attacked(args[$2])
-        when /prob\((#{LABEL}), (#{FLOAT})\)\./
-          args[$1].initial_belief = $2.to_f
-        when /goal\((#{LABEL}(,[[:blank:]]*#{LABEL})*)\)\./
-          goal = $1.split(",").map(&:strip)
-        when /^\s*^/
-        else
-          puts "Unknown #{line}"
-        end
-      end
-
+    def self.build_from_apx(filename)
+      args, goal = APXParser.parse(filename)
       Graph.new(args, goal)
     end
   end
