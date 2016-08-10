@@ -18,12 +18,22 @@ end
 module MCArg
   # Decision functions
   def self.max_dec(children)
-    children.max_by { |n| n.value }
+    children.max_by { |l,n| n.value }
   end
 
   def self.min_dec(children)
-    children.min_by {|n| n.value }
-  end  
+    children.min_by {|l,n| n.value }
+  end
+
+  def self.min_regret_dec(children)
+    leafChildren = children.select{|l,c| c.is_a? LeafNode}
+    unless leafChildren.empty?
+      l, node = leafChildren.max_by { |l, n| n.value }
+      node.value = 0
+      return [l, node]
+    end
+    children.min_by {|l,n| n.value }
+  end
 
   def self.pareto_dec(children)
     optima = [children[0]]
@@ -47,25 +57,41 @@ module MCArg
   end
 
   # Chance functions
-  def self.max_chance(children)
+  def self.max_chance(children, _)
     max_dec(children)
   end
 
-  def self.min_chance(children)
+  def self.min_chance(children, _)
     min_dec(children)
   end
 
-  def self.max_regret_chance(children)
-    max_val = children.select{|c| c.is_a? LeafNode}.max_by { |n| n.value }.value
-    children.each {|c| c.value = max_val - c.value if c.is_a? LeafNode}
-    children.max_by { |n| n.value }
+  def self.laplace_chance(children, _)
+    val = children.map { |l,n| n.value.fdiv(children.size) }.reduce(:+)
+    children.each {|l,c| c.value = val}
+    children.max_by { |l,n| n.value }
   end
 
-  def self.pareto_chance(children)
+  def self.hurwicz_chance(children, alpha)
+    max = children.max_by { |l,n| n.value }
+    min = children.min_by { |l,n| n.value }
+    children.each {|l,c| c.value = alpha * max + (1-alpha) * min}
+  end
+
+  def self.max_regret_chance(children, _)
+    leafChildren = children.select{|l,c| c.is_a? LeafNode}
+    unless leafChildren.empty?
+      _, node = leafChildren.max_by { |l, n| n.value }
+      max_val = node.value
+      children.each {|l,c| c.value = max_val - c.value if c.is_a? LeafNode}
+    end
+    children.max_by { |l,n| n.value }
+  end
+
+  def self.pareto_chance(children, _)
     pareto_dec(children)
   end
 
-  def self.dominated_chance(children)
+  def self.dominated_chance(children, _)
     dominated = [children[0]]
     children[1..-1].each do |c|
       to_rem = []
@@ -86,7 +112,7 @@ module MCArg
     dominated
   end
 
-  def self.leaf(children)
+  def self.leaf(children, _)
     nil
   end
 end

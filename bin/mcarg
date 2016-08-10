@@ -11,25 +11,55 @@ class MCArgBin
     program :version, MCArg::VERSION
     program :description, "Optimization of persuasion dialogues using decision trees."
 
+    command :drawgraph do |c|
+      c.syntax = "mcarg drawgraph sourcefile outputname"
+      c.summary = "Draw the argument graph using Graphviz"
+      c.description = "Draw the argument graph using Graphviz."
+      c.action do |args|
+        graph = MCArg::Graph.build_from_apx(args.shift)
+        graph.draw_graph(args.shift)
+      end
+    end
+
     command :drawtree do |c|
-      c.syntax = "mcarg draw_tree filename"
+      c.syntax = "mcarg drawtree sourcefile outputname"
       c.summary = "Draw the decision tree using Graphviz"
       c.description = "Draw the decision tree of each possible execution using Graphviz."
       c.action do |args|
         graph = MCArg::Graph.build_from_apx(args.shift)
-        tree  = graph.build_tree(dec_fct: :max_dec, chn_fct: :max_chance, filters: [:no_duplicate], agg_fct: :std_sum, eval_fct: :random)
-        tree.draw_tree
+        fcts = {dec_fct: :max_dec,
+          chn_fct: :max_chance,
+          filters: [:no_duplicate],
+#          comb_fct: :std_sum,
+          eval_fct: :present,
+          update_fct: :strict,
+          agg_fct: :w_avg,
+          agg_weights: [0.5, 0.5],
+          horizon: 10
+        }
+        tree  = graph.build_tree(fcts)
+        #tree.draw_tree(args.shift)
       end
     end
 
     command :policy do |c|
-      c.syntax = "mcarg policy input_file"
+      c.syntax = "mcarg policy sourcefile"
       c.summary = "Compute the optimal policy of the underlying decision tree"
       c.description = "Compute the optimal policy of the underlying decision tree."
       c.action do |args|
         graph = MCArg::Graph.build_from_apx(args.shift)
-        tree  = graph.build_tree(dec_fct: :max_dec, chn_fct: :max_chance, filters: [:no_duplicate], agg_fct: :std_sum, eval_fct: :random)
-        tree.optimize
+        fcts = {dec_fct: :min_regret_dec,
+          chn_fct: :max_regret_chance,
+          filters: [:no_duplicate],
+          alpha: 0.5,
+#          comb_fct: :std_sum,
+          eval_fct: :present,
+          update_fct: :strict,
+          agg_fct: :w_avg,
+          agg_weights: [0.5, 0.5]
+        }
+        tree  = graph.build_tree(fcts)
+        tree.optimize(fcts[:discount])
         tree.draw_tree
       end
     end

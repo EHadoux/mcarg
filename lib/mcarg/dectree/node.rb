@@ -1,11 +1,12 @@
 require "pry"
 module MCArg
   class Node
-    attr_reader :children, :function, :value, :optimal, :label
+    attr_reader :children, :function, :value, :optimal, :label, :fct_arg
     attr_accessor :parent
 
-    def initialize(function, label=nil)
+    def initialize(function, fct_arg, label=nil)
       @function  = function
+      @fct_arg   = fct_arg
       @label     = label
       @children  = Hash.new(nil)
       @value     = nil
@@ -25,7 +26,7 @@ module MCArg
     def optimize(discount = 0.9)
       if @value.nil?
         @children.each_value { |c| c.optimize(discount) }
-        @optimal = MCArg.method(@function).(children)
+        _, @optimal = MCArg.method(@function).(children, @fct_arg)
         @value   = discount * optimal.value
       end
     end

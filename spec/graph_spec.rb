@@ -9,9 +9,9 @@ RSpec.describe MCArg::Graph do
     expect(graph.args["foo"].attackers.size).to eq(0)
     expect(graph.args["bar"].attackers.size).to eq(1)
     expect(graph.args["baz"].attackers.size).to eq(2)
-    expect(graph.args["foo"].initial_belief).to eq(1)
-    expect(graph.args["bar"].initial_belief).to eq(1)
-    expect(graph.args["baz"].initial_belief).to eq(0.116)
+    expect(graph.args["foo"].initial_belief).to eq(0.5)
+    expect(graph.args["bar"].initial_belief).to eq(0.5)
+    expect(graph.args["baz"].initial_belief).to eq(0.5)
   end
 
   it "builds all executions" do

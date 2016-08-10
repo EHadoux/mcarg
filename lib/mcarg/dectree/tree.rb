@@ -6,18 +6,18 @@ module MCArg
       @root = root
     end
 
-    def optimize
-      root.optimize
+    def optimize(discount=0.9)
+      root.optimize(discount)
     end
 
-    def draw_tree
+    def draw_tree(filename)
       require "graphviz"
 
       graph = GraphViz.new(:tree, :type => :graph, :rankdir => "LR")
       root = graph.add_node("root", :shape => :square, :label => (@root.optimal.nil? ? "" : "#{@root.optimal.label} #{@root.value}"))
       build_children(graph, @root, root, :circle, 1)
 
-      graph.output( :png => "test.png" )
+      graph.output( :png => "#{filename}.png" )
     end
 
     def build_children(graph, node, gnode, shape, tag)

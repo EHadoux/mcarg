@@ -3,11 +3,6 @@ arg(bar).
 arg(baz).
 
 att(foo, bar).
-att(foo, baz).
 att(bar, baz).
 
-prob(foo, 1).
-prob(bar, 1.0).
-prob(baz, 0.116).
-
-goal(foo, baz).
+goal(baz).
