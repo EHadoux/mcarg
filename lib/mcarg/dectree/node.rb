@@ -1,12 +1,12 @@
-require "pry"
 module MCArg
   class Node
-    attr_reader :children, :function, :value, :optimal, :label, :fct_arg
-    attr_accessor :parent
+    attr_reader :children, :proponent, :dec_func, :label, :fct_arg
+    attr_accessor :parent, :value, :optimal
 
-    def initialize(function, fct_arg, label=nil)
-      @function  = function
-      @fct_arg   = fct_arg
+    def initialize(dec_hash, proponent, label=nil)
+      @dec_func  = dec_hash[:func]
+      @fct_arg   = dec_hash[:params]
+      @proponent = proponent
       @label     = label
       @children  = Hash.new(nil)
       @value     = nil
@@ -23,12 +23,11 @@ module MCArg
       @children[node.label]
     end
 
-    def optimize(discount = 0.9)
-      if @value.nil?
-        @children.each_value { |c| c.optimize(discount) }
-        _, @optimal = MCArg.method(@function).(children, @fct_arg)
-        @value   = discount * optimal.value
-      end
+    def optimize
+      assert @proponent, "Optimization of proponent's args only"
+      assert @value.nil?
+      @children.values.reject {|c| c.is_a? LeafNode}.each {|c| c.children.values.reject {|c| c.is_a? LeafNode}.each {|n| n.optimize}}
+      @dec_func.(self, @fct_arg)
     end
   end
 end

@@ -1,10 +1,10 @@
 module MCArg
-  def self.w_avg(values, weights)
-    [values, weights].transpose.map {|a,b| a*b}.reduce(:+)
+  def self.w_avg(values, params)
+    [values, params[:weights]].transpose.map {|a,b| a*b}.reduce(:+)
   end
 
-  def self.owa(values, weights)
-    MCArg.w_avg(values.sort, weights)
+  def self.owa(values, params)
+    MCArg.w_avg(values.sort, params[:weights])
   end
 
   def self.max_agg(values, _)

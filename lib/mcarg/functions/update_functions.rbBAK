@@ -1,0 +1,56 @@
+module MCArg
+  def self.refinement(distribution, factor, side, arg) # private
+    nb_bits  = Math.log2(distribution.size).ceil
+    new_dist = Array.new(distribution)
+    arg.belief = 0
+    #(0...distribution.size).each do |it|
+    0.upto(distribution.size - 1) do |it|
+      #bits = ("%0#{nb_bits}b" % it)
+      #if side ^ (bits[arg.index] == "0")
+      if side ^ (it[arg.index] == 0)
+        #h = String.new(bits)
+        mask = 1 << arg.index
+        #puts "#{mask} #{it} #{~(mask ^ ~it)}"
+        #h[arg.index] = (side ? "0" : "1")
+        #new_dist[it] += factor * distribution[h.to_i(2)]
+        index = side ? ~(mask ^ ~it) : (it | mask)
+        #puts index
+        new_dist[it] += factor * distribution[index]
+      else
+        new_dist[it] = (1 - factor) * distribution[it]
+      end
+      #arg.belief += new_dist[it] if bits[arg.index] == "1"
+      arg.belief += new_dist[it] if it[arg.index] == 1
+    end
+    new_dist
+  end
+
+  def self.naive(distribution, arg, _)
+    MCArg.refinement(distribution, 1, true, arg)
+  end
+
+  def self.trusting(distribution, arg, _)
+    related = arg.attacks.values + arg.is_atked_by.values
+    dist = MCArg.refinement(distribution, 1, true, arg)
+    related.each {|a| dist = MCArg.refinement(dist, 1, false, a)}
+    dist
+  end
+
+  def self.strict(distribution, arg, _)
+    related = arg.attacks.values
+    if arg.is_atked_by.values.all? {|a| a.belief <= 0.5}
+      distribution = MCArg.refinement(distribution, 1, true, arg)
+      related.each {|a| distribution = MCArg.refinement(distribution, 1, false, a)}
+    end
+    distribution
+  end
+
+  def self.ambivalent(distribution, arg, params)
+    related = arg.is_atked_by.values
+    if arg.is_atked_by.values.all? {|a| a.belief <= 0.5}
+      distribution = MCArg.refinement(distribution, 0.75, true, arg)
+      related.each {|a| distribution = MCArg.refinement(distribution, 0.75, false, a)}
+    end
+    distribution
+  end
+end

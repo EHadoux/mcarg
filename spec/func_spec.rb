@@ -88,8 +88,8 @@ RSpec.describe MCArg do
   context "Update function" do
     it "refines the belief" do
       distribution = [Rational(1,10), Rational(1,10), Rational(2,10), Rational(6,10)]
-      a = MCArg::Argument.new("a", 0)
-      b = MCArg::Argument.new("b", 1)
+      a = MCArg::Argument.new("a", 1)
+      b = MCArg::Argument.new("b", 0)
 
       expect(MCArg.refinement(distribution, 1, true, a).map{ |r| r.to_f }).to eq([0,0,0.3,0.7])
       expect(MCArg.refinement(distribution, 1, false, a).map{ |r| r.to_f }).to eq([0.3,0.7,0,0])

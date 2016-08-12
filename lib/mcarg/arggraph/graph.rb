@@ -4,28 +4,32 @@ module MCArg
 
     def initialize(args, goal)
       @args = args
-      @goal = goal.map { |g| @args[g] }
+      @goal = goal
     end
 
-    def build_executions(current, list, filters, horizon)
-      return list if horizon < 0
+    def build_executions(current, list, f_hash, horizon)
+      return list + [current] if horizon < 0
+
       args = Array.new(@args.keys)
-      filters.each do |filt|
-        args = MCArg.method(filt).(current, args, self)
+      f_hash[:func].each do |filt|
+        args = filt.(current, args, f_hash[:params])
       end
+
       return list + [current] if args.empty?
+
       args.each do |arg|
-        list = build_executions(current + [arg], list, filters, horizon - 1)
+        list = build_executions(current + [arg], list, f_hash, horizon - 1)
       end
       list
     end
 
-    def build_tree(**fcts)
-      executions = build_executions([], [], fcts[:filters], fcts[:horizon])
-      root = Node.new(fcts[:dec_fct])
+    def build_tree(**params)
+      executions = build_executions([], [], params[:filters], params[:horizon])
+      root = Node.new(params[:dec], true)
       tree = Tree.new(root)
       powerval = 2 ** @args.size
-      basedistribution = [Rational(1, powerval)] * powerval
+      #basedistribution = [Rational(1, powerval)] * powerval
+      basedistribution = [1.0/powerval] * powerval
 
       executions.each do |ex|
         reset_beliefs
@@ -33,13 +37,14 @@ module MCArg
 
         current = root
         ex[0...-1].each_with_index do |arg, it|
-          current = current.add_child Node.new((it.even? ? fcts[:chn_fct] : fcts[:dec_fct]), fcts[:alpha], arg)
-          distribution = MCArg.method(fcts[:update_fct]).(distribution, @args[arg])
+          current = current.add_child Node.new(params[:dec], !current.proponent, arg)
+          distribution = params[:belief][:func].(distribution, @args[arg], params[:belief][:params])
         end
-        distribution = MCArg.method(fcts[:update_fct]).(distribution, @args[ex[-1]])
-#        leafval = MCArg.method(fcts[:comb_fct]).(MCArg.method(fcts[:eval_fct]).(@goal, ex))
-        leafval = MCArg.method(fcts[:eval_fct]).(@goal, ex).values
-        leafval = MCArg.method(fcts[:agg_fct]).([leafval[0], @goal[0].belief], fcts[:agg_weights])
+        distribution = params[:belief][:func].(distribution, @args[ex[-1]], params[:belief][:params])
+
+        goal_value_pairs  = params[:eval][:func].(@goal, ex, params[:eval][:params])
+        value_belief_comb = goal_value_pairs.map {|g,v| v * g.belief}
+        leafval = params[:agg][:func].(value_belief_comb, params[:agg][:params])
         current.add_child LeafNode.new(leafval, ex[-1])
       end
       tree

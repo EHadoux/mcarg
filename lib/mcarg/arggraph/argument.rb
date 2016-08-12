@@ -1,21 +1,21 @@
 module MCArg
   class Argument
-    attr_reader :attackers, :attacked, :label, :index
+    attr_reader :is_atked_by, :attacks, :label, :index
     attr_accessor :belief, :initial_belief, :component
 
     def initialize(label, index)
-      @label     = label
-      @belief    = 0.5
+      @label          = label
+      @belief         = 0.5
       @initial_belief = @belief
-      @attackers = {}
-      @attacked  = {}
-      @index     = index
-      @component = nil
+      @is_atked_by    = {}
+      @attacks        = {}
+      @index          = index
+      @component      = nil
     end
 
-    def add_attacked(arg)
-      @attacked[arg.label] = arg
-      arg.attackers[@label] = self
+    def add_attack(arg)
+      @attacks[arg.label] = arg
+      arg.is_atked_by[@label] = self
     end
 
     def reset_belief
@@ -23,13 +23,13 @@ module MCArg
     end
 
     def propagate_component
-      @attacked.each do |_, a|
+      @attacks.each do |_, a|
         if a.component != @component
           a.component = @component
           a.propagate_component
         end
       end
-      @attackers.each do |_, a|
+      @is_atked_by.each do |_, a|
         if a.component != @component
           a.component = @component
           a.propagate_component

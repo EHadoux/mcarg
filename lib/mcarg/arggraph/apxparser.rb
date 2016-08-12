@@ -14,8 +14,7 @@ module MCArg
           args[$1] = Argument.new($1, index)
           index += 1
         when /att\((#{LABEL}), (#{LABEL})\)\./
-          next unless args[$2] #When supports are stripped-out
-          args[$1].add_attacked(args[$2])
+          args[$1].add_attack(args[$2])
           if args[$1].component.nil?
             args[$1].component = component
             component += 1
@@ -24,7 +23,7 @@ module MCArg
         when /prob\((#{LABEL}), (#{FLOAT})\)\./
           args[$1].initial_belief = $2.to_f
         when /goal\((#{LABEL}(,[[:blank:]]*#{LABEL})*)\)\./
-          goal = $1.split(",").map(&:strip)
+          goal = $1.split(",").map(&:strip).map {|g| args[g]}
         when /^\s*^/
         else
           puts "Unknown #{line}"

@@ -3,7 +3,7 @@ module MCArg
     attr_accessor :value
 
     def initialize(value, label)
-      super(:leaf, label)
+      super({func: MCArg.method(:leaf)}, false, label)
       @value = value
     end
 

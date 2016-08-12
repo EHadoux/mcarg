@@ -1,118 +1,136 @@
-def dominate(p1, p2)
-  comp = -2
-  p1.each_with_index do |v, ind|
-    next if v == p2[ind]
-    if v < p2[ind]
-      next if comp == 1
-      return 0 if comp == -1
-      comp = 1
-    else
-      next if comp == -1
-      return 0 if comp == 1
-      comp = -1
-    end
-  end
-  comp
-end
+# def dominate(p1, p2)
+#   comp = -2
+#   p1.each_with_index do |v, ind|
+#     next if v == p2[ind]
+#     if v < p2[ind]
+#       next if comp == 1
+#       return 0 if comp == -1
+#       comp = 1
+#     else
+#       next if comp == -1
+#       return 0 if comp == 1
+#       comp = -1
+#     end
+#   end
+#   comp
+# end
 
 module MCArg
-  # Decision functions
-  def self.max_dec(children)
-    children.max_by { |l,n| n.value }
+  def self.max(node, params) # private
+    assert node.children.values.all? {|n| n.value}, "All children should have a value"
+    max_node     = node.children.values.max_by {|n| n.value}
+    node.value   = max_node.value * params[:discount]
+    node.optimal = max_node
   end
 
-  def self.min_dec(children)
-    children.min_by {|l,n| n.value }
-  end
-
-  def self.min_regret_dec(children)
-    leafChildren = children.select{|l,c| c.is_a? LeafNode}
-    unless leafChildren.empty?
-      l, node = leafChildren.max_by { |l, n| n.value }
-      node.value = 0
-      return [l, node]
-    end
-    children.min_by {|l,n| n.value }
-  end
-
-  def self.pareto_dec(children)
-    optima = [children[0]]
-    children[1..-1].each do |c|
-      to_rem = []
-      to_add = []
-      dom = false
-      optima.each do |o|
-        case dominate(c.value, o.value)
-        when 1
-          dom = true
-          break
-        when -1
-          to_rem << o
-        end
-      end
-      optima -= to_rem
-      optima << c unless dom
-    end
-    optima
-  end
-
-  # Chance functions
-  def self.max_chance(children, _)
-    max_dec(children)
-  end
-
-  def self.min_chance(children, _)
-    min_dec(children)
-  end
-
-  def self.laplace_chance(children, _)
-    val = children.map { |l,n| n.value.fdiv(children.size) }.reduce(:+)
-    children.each {|l,c| c.value = val}
-    children.max_by { |l,n| n.value }
-  end
-
-  def self.hurwicz_chance(children, alpha)
-    max = children.max_by { |l,n| n.value }
-    min = children.min_by { |l,n| n.value }
-    children.each {|l,c| c.value = alpha * max + (1-alpha) * min}
-  end
-
-  def self.max_regret_chance(children, _)
-    leafChildren = children.select{|l,c| c.is_a? LeafNode}
-    unless leafChildren.empty?
-      _, node = leafChildren.max_by { |l, n| n.value }
-      max_val = node.value
-      children.each {|l,c| c.value = max_val - c.value if c.is_a? LeafNode}
-    end
-    children.max_by { |l,n| n.value }
-  end
-
-  def self.pareto_chance(children, _)
-    pareto_dec(children)
-  end
-
-  def self.dominated_chance(children, _)
-    dominated = [children[0]]
-    children[1..-1].each do |c|
-      to_rem = []
-      to_add = []
-      dom = true
-      dominated.each do |o|
-        case dominate(c.value, o.value)
-        when -1
-          dom = false
-          break
-        when 1
-          to_rem << o
-        end
-      end
-      dominated -= to_rem
-      dominated << c if dom
-    end
-    dominated
+  def self.min(node, params) # private
+    assert node.children.values.all? {|n| n.value}, "All children should have a value"
+    min_node     = node.children.values.min_by {|n| n.value}
+    node.value   = min_node.value * params[:discount]
+    node.optimal = min_node
   end
 
   def self.leaf(children, _)
-    nil
+    raise NotImplementedError
   end
+
+  def self.maximin(node, params)
+    node.children.values.reject {|c| c.is_a? LeafNode}.each do |c|
+      assert c.children.values.all? {|n| n.value}, "All children should have a value"
+      min     = c.children.values.map(&:value).min
+      c.value = min * params[:discount]
+    end
+    MCArg.max(node, params)
+  end
+
+  def self.maximax(node, params)
+    node.children.values.reject {|c| c.is_a? LeafNode}.each do |c|
+      assert c.children.values.all? {|n| n.value}, "All children should have a value"
+      max     = c.children.values.map(&:value).max
+      c.value = max * params[:discount]
+    end
+    MCArg.max(node, params)
+  end
+
+  def self.laplace(node, params)
+    node.children.values.reject {|c| c.is_a? LeafNode}.each do |c|
+      assert c.children.values.all? {|n| n.value}, "All children should have a value"
+      c.value = c.children.values.map { |n| n.value.fdiv(children.size) }.reduce(:+) * params[:discount]
+    end
+    MCArg.max(node, params)
+  end
+
+  def self.hurwicz(node, params)
+    node.children.values.reject {|c| c.is_a? LeafNode}.each do |c|
+      assert c.children.values.all? {|n| n.value}, "All children should have a value"
+      min, max = c.children.values.map(&:value).minmax
+      c.value  = (params[:alpha] * max + (1 - params[:alpha]) * min) * params[:discount]
+    end
+    MCArg.max(node, params)
+  end
+
+  def self.minmaxregret(node, params)
+    node.children.values.reject {|c| c.is_a? LeafNode}.reject! {|c| c.value}.each do |c|
+      leaves, others = c.children.values.partition {|n| n.is_a? LeafNode}
+      min, max     = leaves.map(&:value).minmax
+      max_non_leaf = others.map(&:value).max
+      c.value = [(max - min) * (2 - params[:discount]), max_non_leaf].max # Because we want to increase the regret is the outcome is further
+    end
+
+    assert node.children.values.all? {|n| n.value}, "All children should have a value"
+    leaves = node.children.values.select {|n| n.is_a? LeafNode}
+    if leaves.empty?
+      MCArg.min(node, params.merge({discount: 2 - params[:discount]}))
+    else # Regret on a leaf connected to a proponent node is 0 because it can choose to surely have this outcome
+      max_leaf     = leaves.max_by {|n| n.value}
+      node.value   = 0
+      node.optimal = max_leaf
+    end
+  end
+
+  # def self.pareto_dec(children)
+  #   optima = [children[0]]
+  #   children[1..-1].each do |c|
+  #     to_rem = []
+  #     to_add = []
+  #     dom = false
+  #     optima.each do |o|
+  #       case dominate(c.value, o.value)
+  #       when 1
+  #         dom = true
+  #         break
+  #       when -1
+  #         to_rem << o
+  #       end
+  #     end
+  #     optima -= to_rem
+  #     optima << c unless dom
+  #   end
+  #   optima
+  # end
+
+  # def self.pareto_chance(children, _)
+  #   pareto_dec(children)
+  # end
+
+  # def self.dominated_chance(children, _)
+  #   dominated = [children[0]]
+  #   children[1..-1].each do |c|
+  #     to_rem = []
+  #     to_add = []
+  #     dom = true
+  #     dominated.each do |o|
+  #       case dominate(c.value, o.value)
+  #       when -1
+  #         dom = false
+  #         break
+  #       when 1
+  #         to_rem << o
+  #       end
+  #     end
+  #     dominated -= to_rem
+  #     dominated << c if dom
+  #   end
+  #   dominated
+  # end
 end

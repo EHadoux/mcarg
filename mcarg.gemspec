@@ -9,8 +9,8 @@ Gem::Specification.new do |spec|
   spec.authors       = ["Emmanuel Hadoux"]
   spec.email         = ["emmanuel.hadoux@gmail.com"]
 
-  spec.summary       = %q{TODO: Write a short summary, because Rubygems requires one.}
-  spec.description   = %q{TODO: Write a longer description or delete this line.}
+  spec.summary       = %q{MCArg}
+  #spec.description   = %q{TODO: Write a longer description or delete this line.}
   spec.homepage      = "TODO: Put your gem's website or public repo URL here."
   spec.license       = "MIT"
 
@@ -28,4 +28,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "pry-byebug"
   spec.add_development_dependency "iruby"
   spec.add_development_dependency "ffi-rzmq"
+  spec.add_development_dependency "solid_assert"
+  spec.add_development_dependency "ruby-prof"
 end

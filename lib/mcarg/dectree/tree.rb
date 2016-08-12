@@ -6,8 +6,8 @@ module MCArg
       @root = root
     end
 
-    def optimize(discount=0.9)
-      root.optimize(discount)
+    def optimize
+      root.optimize
     end
 
     def draw_tree(filename)
@@ -25,6 +25,7 @@ module MCArg
         if n.children.empty?
           child = graph.add_node(n.value.to_s + tag.to_s, :shape => "none", :label => n.value)
           graph.add_edge(gnode, child, :label => l)
+          tag += 1
         else
           child = graph.add_node(l + tag.to_s, :shape => shape, :label => (n.optimal.nil? ? "" : "#{n.optimal.label} #{n.value}"))
           graph.add_edge(gnode, child, :label => l)
