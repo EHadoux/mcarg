@@ -18,14 +18,14 @@
 module MCArg
   def self.max(node, params) # private
     assert node.children.values.all? {|n| n.value}, "All children should have a value"
-    max_node     = node.children.values.max_by {|n| n.value}
+    max_node     = node.children.values.max_by(&:value)
     node.value   = max_node.value * params[:discount]
     node.optimal = max_node
   end
 
   def self.min(node, params) # private
     assert node.children.values.all? {|n| n.value}, "All children should have a value"
-    min_node     = node.children.values.min_by {|n| n.value}
+    min_node     = node.children.values.min_by(&:value)
     node.value   = min_node.value * params[:discount]
     node.optimal = min_node
   end
@@ -37,8 +37,10 @@ module MCArg
   def self.maximin(node, params)
     node.children.values.reject {|c| c.is_a? LeafNode}.each do |c|
       assert c.children.values.all? {|n| n.value}, "All children should have a value"
-      min_node = c.children.values.map(&:value).min
-      c.value = min * params[:discount]
+      min_node, ind  = c.children.values.each_with_index.min_by {|n, _| n.value}
+      c.model        = [0] * c.children.size
+      c.model[ind]   = 1
+      c.value        = min_node.value * params[:discount]
     end
     MCArg.max(node, params)
   end
@@ -46,8 +48,10 @@ module MCArg
   def self.maximax(node, params)
     node.children.values.reject {|c| c.is_a? LeafNode}.each do |c|
       assert c.children.values.all? {|n| n.value}, "All children should have a value"
-      max     = c.children.values.map(&:value).max
-      c.value = max * params[:discount]
+      max_node, ind  = c.children.values.each_with_index.max_by {|n, _| n.value}
+      c.model        = [0] * c.children.size
+      c.model[ind]   = 1
+      c.value        = max_node.value * params[:discount]
     end
     MCArg.max(node, params)
   end
@@ -56,6 +60,7 @@ module MCArg
     node.children.values.reject {|c| c.is_a? LeafNode}.each do |c|
       assert c.children.values.all? {|n| n.value}, "All children should have a value"
       c.value = c.children.values.map { |n| n.value.fdiv(children.size) }.reduce(:+) * params[:discount]
+      c.model = [1.0 / c.children.size] * c.children.size
     end
     MCArg.max(node, params)
   end
@@ -63,8 +68,11 @@ module MCArg
   def self.hurwicz(node, params)
     node.children.values.reject {|c| c.is_a? LeafNode}.each do |c|
       assert c.children.values.all? {|n| n.value}, "All children should have a value"
-      min, max = c.children.values.map(&:value).minmax
-      c.value  = (params[:alpha] * max + (1 - params[:alpha]) * min) * params[:discount]
+      min_arr, max_arr    = c.children.values.each_with_index.minmax_by {|n, _| n.value}
+      c.model             = [0] * c.children.size
+      c.model[min_arr[1]] = params[:alpha]
+      c.model[max_arr[1]] = 1 - params[:alpha]
+      c.value             = (params[:alpha] * max_arr[0].value + (1 - params[:alpha]) * min_arr[0].value) * params[:discount]
     end
     MCArg.max(node, params)
   end
@@ -74,6 +82,7 @@ module MCArg
       leaves, others = c.children.values.partition {|n| n.is_a? LeafNode}
       min, max     = leaves.map(&:value).minmax
       max_non_leaf = others.map(&:value).max
+      c.model = [1.0 / c.children.size] * c.children.size
       c.value = [(max - min) * (2 - params[:discount]), max_non_leaf].max # Because we want to increase the regret is the outcome is further
     end
 

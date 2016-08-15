@@ -1,7 +1,7 @@
 module MCArg
   class Node
     attr_reader :children, :proponent, :dec_func, :label, :fct_arg
-    attr_accessor :parent, :value, :optimal
+    attr_accessor :parent, :value, :optimal, :model
 
     def initialize(dec_hash, proponent, label=nil)
       @dec_func  = dec_hash[:func]
