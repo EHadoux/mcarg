@@ -1,9 +1,9 @@
 module MCArg
-  def kullback_leibler(p, q)
-    p.lazy.zip(q).map {|pp, qp| pp * Math.log2(pp / qp)}.reduce(:+) #log2 -> [0,1] for JSD
+  def self.kullback_leibler(p, q)
+    p.lazy.zip(q).map {|pp, qp| (pp == 0) ? 0 : pp * Math.log2(pp / qp)}.reduce(:+) #log2 -> [0,1] for JSD
   end
 
-  def jensen_shannon(p, q)
+  def self.jensen_shannon(p, q)
     m = p.lazy.zip(q).map {|pp, pq| (pp + pq) / 2}.to_a
     kullback_leibler(p, m) / 2 + kullback_leibler(q, m) / 2
   end
