@@ -31,7 +31,7 @@ module MCArg
       #basedistribution = [Rational(1, powerval)] * powerval
       basedistribution = [1.0/powerval] * powerval
 
-      executions.each do |ex|
+      block = Proc.new do |ex|
         reset_beliefs
         distribution = basedistribution.clone
 
@@ -42,11 +42,18 @@ module MCArg
         end
         distribution = params[:belief][:func].(distribution, @args[ex[-1]], params[:belief][:params])
 
-        goal_value_pairs  = params[:eval][:func].(@goal, ex, params[:eval][:params])
+        goal_value_pairs  = params[:val][:func].(@goal, ex, params[:val][:params])
         value_belief_comb = goal_value_pairs.map {|g,v| v * g.belief}
         leafval = params[:agg][:func].(value_belief_comb, params[:agg][:params])
         current.add_child LeafNode.new(leafval, ex[-1])
       end
+
+      if params[:quiet]
+        executions.each {|ex| block.(ex) }
+      else
+        Commander::UI::progress(executions) {|ex| block.(ex) }
+      end
+
       tree
     end
 

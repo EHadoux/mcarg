@@ -37,7 +37,7 @@ module MCArg
   def self.maximin(node, params)
     node.children.values.reject {|c| c.is_a? LeafNode}.each do |c|
       assert c.children.values.all? {|n| n.value}, "All children should have a value"
-      min     = c.children.values.map(&:value).min
+      min_node = c.children.values.map(&:value).min
       c.value = min * params[:discount]
     end
     MCArg.max(node, params)

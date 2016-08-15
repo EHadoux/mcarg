@@ -18,69 +18,33 @@ class MCArgBin
     {func: filters, params: filters_opt}
   end
 
-  def scan_dec_func(options)
-    dec_opt = {discount: options.discount}
-    func    = case options.decfunc
-      when "maximin" then MCArg.method(:maximin)
-      when "maximax" then MCArg.method(:maximax)
-      when "laplace" then MCArg.method(:laplace)
-      when "hurwicz"
-        dec_opt[:alpha] = options.alpha
-        MCArg.method(:hurwicz)
-      when "minmaxregret" then MCArg.method(:minmaxregret)
-      else raise "Unknown decision function #{options.decfunc}"
-    end
-    {func: func, params: dec_opt}
-  end
-
-  def scan_belief_update_func(options)
-    update_opt = {factor: options.updatefactor}
-    func       = case options.belieffunc
-      when "naive" then MCArg.method(:naive)
-      when "strict" then MCArg.method(:naive)
-      when "trusting" then MCArg.method(:naive)
-      when "ambivalent" then MCArg.method(:ambivalent)
-      else raise "Unknown belief update function #{options.belieffunc}"
-    end
-    {func: func, params: update_opt}
-  end
-
-  def scan_eval_func(options)
-    eval_opt = {}
-    func     = case options.evalfunc
-      when "present" then MCArg.method(:present)
-      else raise "Unknown belief update function #{options.evalfunc}"
-    end
-    {func: func, params: eval_opt}
-  end
-
-  def scan_agg_func(options)
-    agg_opt = {weights: options.weights}
-    func    = case options.aggfunc
-      when "w_avg" then MCArg.method(:w_avg)
-      when "owa" then MCArg.method(:owa)
-      when "max" then MCArg.method(:max_agg)
-      when "min" then MCArg.method(:min_agg)
-      else raise "Unknown aggregation function #{options.aggfunc}"
-    end
-    {func: func, params: agg_opt}
-  end
-
   def build_params_hash(options)
     params = {}
     params[:filters] = scan_filters(options)
     params[:horizon] = options.horizon
-    params[:dec]     = scan_dec_func(options)
-    params[:belief]  = scan_belief_update_func(options)
-    params[:eval]    = scan_eval_func(options)
-    params[:agg]     = scan_agg_func(options)
+    params[:dec]     = {func: MCArg.method(options.decfunc),
+                        params: {alpha: options.alpha,
+                                discount: options.discount}}
+    params[:belief]  = {func: MCArg.method(options.belieffunc),
+                        params: {factor: options.updatefactor}}
+    params[:val]     = {func: MCArg.method(options.valfunc),
+                        params: {}}
+    params[:agg]     = {func: MCArg.method(options.aggfunc),
+                        params: {weights: options.weights}}
+    params[:quiet]   = options.quiet
     params
   end
+
+  BELIEF_UPDATE_FUNCTIONS = %i(naive strict ambivalent trusting)
+  DECISION_FUNCTIONS      = %i(maximin maximax laplace hurwicz minmaxregret)
+  AGGREGATION_FUNCTIONS   = %i(w_avg owa max min)
+  VALUATION_FUNCTIONS     = %i(present)
 
   def run
     program :name, "mcarg"
     program :version, MCArg::VERSION
     program :description, "Optimization of persuasion dialogues using decision trees."
+    program :help_formatter, :compact
 
     command :drawgraph do |c|
       c.syntax = "mcarg drawgraph sourcefile outputname"
@@ -98,36 +62,38 @@ class MCArgBin
       c.description = "Compute the optimal policy of the underlying decision tree."
       c.option "--[no-]draw", TrueClass, "Draw the tree and the policy using GraphViz"
       c.option "--pngname FILE", String, "Output file for the drawn tree"
-      c.option "--[no-]optimize", TrueClass, "Compute the optimal policy for the tree"
+      c.option "--[no-]optimize", TrueClass, "Enables optimal policy computation for the tree (actived by default)"
       c.option "--horizon INTEGER", Integer, "Horizon of the debates (number of steps) (default 5)"
-      c.option "--goalatks", TrueClass, "Enables executions where the proponent attacks its own goals"
+      c.option "--goalatks", TrueClass, "Enables executions where the proponent can attack its own goals"
       c.option "--onlyrelevant", TrueClass, "Removes executions with irrelevant arguments (arguments not connected to the active graph that are not in a new connected component)"
-      c.option "--decfunc DECISION_FUNC", String, "Decision function to use for the proponent"
+      c.option "--decfunc DEC_FUNC", DECISION_FUNCTIONS, "Decision function to use for the proponent"
+      c.option "--alpha FLOAT", Float, "Alpha factor [0,1] to use for Hurwicz decision rule (default 0.5)"
       c.option "--discount REAL", Float, "Discount factor [0,1] to apply on outcomes (default 0.9)"
-      c.option "--belieffunc BELIEF_UPDATE_FUNC", String, "Belief update function to use"
-      c.option "--updatefactor FLOAT", Float, "Belief update factor [0,1] to apply (default 1)"
-      c.option "--evalfunc EVAL_FUNC", String, "Execution evaluation function to use"
-      c.option "--aggfunc AGG_FUNC", String, "Aggregation function to use to combine multi-parted goals"
-      c.option "--weights WEIGHTS_ARR", Array, "Array of weights for the aggregation function in form weight1 weight2 (default uniform)"
-      c.option "--profile", TrueClass, "Enables profiling (development only)"
-      c.option "--evaluatepolicy", TrueClass, "Enables policy evaluation"
-      c.option "--runs INTEGER", Integer, "Number of runs to average the policy evaluation (default 1000)"
+      c.option "--belieffunc FUNC", BELIEF_UPDATE_FUNCTIONS, "Belief update function to use"
+      c.option "--updatefactor FLOAT", Float, "Belief update factor [0,1] to apply in unconstrained belief methods (default 1)"
+      c.option "--valfunc VAL_FUNC", VALUATION_FUNCTIONS, "Execution valuation function to use"
+      c.option "--aggfunc AGG_FUNC", AGGREGATION_FUNCTIONS, "Aggregation function to use to combine multi-parted goals"
+      c.option "--weights WEIGHTS", Array, "Array of weights for the aggregation function (default uniform)"
+      c.option "-p", "--profile", TrueClass, "Enables profiling (development only)"
+      c.option "--[no-]evaluate", TrueClass, "Enables policy evaluation (deactivated by default)"
+      c.option "-r", "--runs INTEGER", Integer, "Number of runs to average the policy evaluation (default 1000)"
       c.option "--proponent STRATEGY", String, "Proponent's strategy: random or optimal (default optimal)"
+      c.option "-q", "--quiet", TrueClass, "Runs quietly (no progress bar)"
       c.action do |args, options|
         RubyProf.start if options.profile
         @@graph = MCArg::Graph.build_from_apx(args.shift)
 
-        options.default draw: false, optimize: true, goalatks: false, onlyrelevant: false, discount: 0.9, horizon: 5, pngname: "tree", updatefactor: 1, weights: [Rational(1, @@graph.goal.size)] * @@graph.goal.size, profile: false, runs: 1000, proponent: :optimal
+        options.default draw: false, optimize: true, goalatks: false, onlyrelevant: false, discount: 0.9, horizon: 5, pngname: "tree", updatefactor: 1, weights: [Rational(1, @@graph.goal.size)] * @@graph.goal.size, profile: false, runs: 1000, proponent: :optimal, evaluate: false, quiet: false, alpha: 0.5
         params = build_params_hash(options)
 
         tree  = @@graph.build_tree(params)
         tree.optimize if options.optimize
         tree.draw_tree(options.pngname) if options.draw
 
-        if options.evaluatepolicy
+        if options.evaluate
           pro = case options.proponent.to_sym
-          when :optimal then MCArg::Evaluator::OPTIMAL
-          when :random then MCArg::Evaluator::RANDOM
+            when :optimal then MCArg::Evaluator::OPTIMAL
+            when :random then MCArg::Evaluator::RANDOM
           end
           puts MCArg::Evaluator.new(tree).evaluate(options.runs, pro, MCArg::Evaluator::RANDOM)
         end
