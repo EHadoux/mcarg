@@ -78,12 +78,14 @@ class MCArgBin
       c.option "--[no-]evaluate", TrueClass, "Enables policy evaluation (deactivated by default)"
       c.option "-r", "--runs INTEGER", Integer, "Number of runs to average the policy evaluation (default 1000)"
       c.option "--proponent STRATEGY", String, "Proponent's strategy: random or optimal (default optimal)"
+      c.option "--from STARTING_DIST", Float, "Lowest probability distribution distance to consider for the experiments (default 0, step of 0.1)"
+      c.option "--to ENDING_DIST", Float, "Highest probability distribution distance to consider for the experiments (default 1, step of 0.1)"
       c.option "-q", "--quiet", TrueClass, "Runs quietly (no progress bar)"
       c.action do |args, options|
         RubyProf.start if options.profile
         @@graph = MCArg::Graph.build_from_apx(args.shift)
 
-        options.default draw: false, optimize: true, goalatks: false, onlyrelevant: false, discount: 0.9, horizon: 5, pngname: "tree", updatefactor: 1, weights: [Rational(1, @@graph.goal.size)] * @@graph.goal.size, profile: false, runs: 1000, proponent: :optimal, evaluate: false, quiet: false, alpha: 0.5
+        options.default draw: false, optimize: true, goalatks: false, onlyrelevant: false, discount: 0.9, horizon: 5, pngname: "tree", updatefactor: 1, weights: [Rational(1, @@graph.goal.size)] * @@graph.goal.size, profile: false, runs: 1000, proponent: :optimal, evaluate: false, quiet: false, alpha: 0.5, from: 0.0, to: 1.0
         params = build_params_hash(options)
 
         tree  = @@graph.build_tree(params)
@@ -95,7 +97,7 @@ class MCArgBin
             when :optimal then MCArg::Evaluator::OPTIMAL
             when :random then MCArg::Evaluator::RANDOM
           end
-          puts MCArg::Evaluator.new(tree).evaluate(options.runs, pro, MCArg::Evaluator::RANDOM)
+          puts MCArg::Evaluator.new(tree).evaluate(options.runs, pro, MCArg::Evaluator::DISCRETE, options.from, options.to)
         end
 
         if options.profile
